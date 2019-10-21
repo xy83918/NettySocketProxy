@@ -4,8 +4,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
-import io.netty.handler.timeout.IdleState;
-import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -141,7 +139,7 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
     // 客户端发送数据
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(final ChannelHandlerContext ctx, Object msg) throws InterruptedException {
 
         log.info("channelRead");
 
@@ -151,60 +149,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
             bufList.add(buf.copy());
         }
 
-        if (outboundChannel.isActive() && outboundChannel.isOpen()) {
-            outboundChannel.writeAndFlush(msg).addListener(
-                    new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) {
-                            if (future.isSuccess()) {
-                                log.info("future.isSuccess() " + future.isSuccess());
-                                ctx.channel().read();
-                            } else {
-                                log.info("future.isSuccess() " + future.isSuccess());
-                                future.channel().close();
-                            }
-                        }
-                    });
-        } else {
-            final Channel inboundChannel = ctx.channel();
-            // Start the connection attempt.
-            Bootstrap b = new Bootstrap();
-            b.group(inboundChannel.eventLoop()).channel(ctx.channel().getClass())
-                    .handler(new ProxyBackendHandler(inboundChannel))
-                    .option(ChannelOption.AUTO_READ, false);
-            ChannelFuture f = b.connect(remoteHost, remotePort);
-            outboundChannel = f.channel();
-            f.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) {
-                    if (future.isSuccess()) {
-                        // connection complete start to read first data
-                        log.info("future.isSuccess() " + future.isSuccess());
-                        inboundChannel.read();
-                    } else {
-                        // Close the connection if the connection attempt has
-                        // failed.
-                        log.info("future.isSuccess() " + future.isSuccess());
-                        inboundChannel.close();
-                    }
-                }
-            });
-            outboundChannel.writeAndFlush(msg).addListener(
-                    new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) {
-                            if (future.isSuccess()) {
-                                log.info("future.isSuccess() " + future.isSuccess());
-                                ctx.channel().read();
-                            } else {
-                                log.info("future.isSuccess() " + future.isSuccess());
-                                future.channel().close();
-                            }
-                        }
-                    });
-
-        }
-        final Channel inboundChannel = ctx.channel();
         // 从连接发送数据
         if (msg != null) {
 
@@ -212,9 +156,10 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
             log.info(String.valueOf(CONNECTION_CHANNEL_MAP));
             if (ch.isActive()) {
+                log.info("ch.isActive() " + ch.isActive());
+                ByteBuf msg1 = bufList.get(0);
                 ch
-                        .writeAndFlush(
-                                bufList.get(0))
+                        .writeAndFlush(msg1)
                         .addListener(new ChannelFutureListener() {
                             @Override
                             public void operationComplete(ChannelFuture future) throws Exception {
@@ -230,49 +175,11 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
                         });
             } else {
 
-                List<ServerInfo> serverInfos = CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.FOUR);
-                ch = createSinkChannel(ctx, inboundChannel, serverInfos.get(0));
-                //讲各个从链路分别存放到各自的group中
-                ch.writeAndFlush(msg).addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (future.isSuccess()) {
-                            // was able to flush out data, start to read the next chunk
-                            log.info("future.isSuccess() " + future.isSuccess());
-                            ctx.channel().read();
-                        } else {
-                            log.info("future.isSuccess() " + future.isSuccess());
-                            future.channel().close();
-                        }
-                    }
-                });
+                log.info("ch.isActive() " + ch.isActive());
             }
         }
     }
 
-    // 心跳检查
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt)
-            throws Exception {
-        // TODO Auto-generated method stub
-
-        Channel channel = ctx.channel();
-        if (evt instanceof IdleStateEvent) {
-            IdleStateEvent event = (IdleStateEvent) evt;
-            if (event.state().equals(IdleState.READER_IDLE)) {
-                channel.close();
-                log.info("**********心跳检测读失败，强制关闭终端连接");
-            } else if (event.state().equals(IdleState.WRITER_IDLE)) {
-                channel.close();
-                log.info("**********心跳检测写失败，强制关闭终端连接");
-            } else if (event.state().equals(IdleState.ALL_IDLE)) {
-                log.info("**********心跳检测，检测数据发送");
-                // 发送心跳
-                ctx.channel().write("ping\n");
-            }
-        }
-        super.userEventTriggered(ctx, evt);
-    }
 
     // 出异常的连接
     @Override

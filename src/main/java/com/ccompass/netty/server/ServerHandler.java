@@ -9,6 +9,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+        log.info("channelRead0");
         // 收到消息直接打印输出
         log.info(ctx.channel().remoteAddress() + " Say : " + msg);
 
