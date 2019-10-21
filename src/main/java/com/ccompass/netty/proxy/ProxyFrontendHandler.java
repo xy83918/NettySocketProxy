@@ -1,5 +1,8 @@
 package com.ccompass.netty.proxy;
 
+import com.ccompass.netty.proxy.biz.CacheUtils;
+import com.ccompass.netty.proxy.biz.ServerInfo;
+import com.ccompass.netty.proxy.biz.ServerTypeEnum;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -10,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static com.ccompass.netty.proxy.ChannelCacheManager.CONNECTION_CHANNEL_MAP;
+import static com.ccompass.netty.proxy.biz.ChannelCacheManager.CONNECTION_CHANNEL_MAP;
 
 @Slf4j
 public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {

@@ -1,5 +1,7 @@
 package com.ccompass.netty.client;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -18,12 +20,28 @@ public class Client {
     public static String host = "127.0.0.1";
     public static int port = 7100;
 
+
+    @Parameter(names = {"--playerId", "-p"})
+    private static String userId;
+
     /**
      * @param args
      * @throws InterruptedException
      * @throws IOException
      */
     public static void main(String[] args) throws InterruptedException, IOException {
+
+
+        Client main = new Client();
+
+        JCommander.newBuilder()
+                .addObject(main)
+                .build()
+                .parse(args);
+
+        log.info(String.valueOf(userId));
+
+
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap b = new Bootstrap();
