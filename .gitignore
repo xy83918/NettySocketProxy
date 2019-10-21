@@ -101,3 +101,7 @@ log
 target
 src/test/
 target/generated-sources/
+
+logs
+*/*.log
+logs/
