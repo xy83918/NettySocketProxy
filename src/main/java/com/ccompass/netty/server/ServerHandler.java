@@ -14,7 +14,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
         log.info(ctx.channel().remoteAddress() + " Say : " + msg);
 
         // 返回客户端消息 - 我已经接收到了你的消息
-        ctx.channel().writeAndFlush(ctx.channel().localAddress() + " Received your message !\n");
+        ctx.channel().writeAndFlush(ctx.channel().localAddress() + " Received your message ! msg is : " + msg + "\n");
     }
 
     /*
