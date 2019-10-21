@@ -26,7 +26,7 @@ public class CheckSinkChannel extends TimerTask {
 
     @Override
     public void run() {
-        //System.err.println("dodo:"+NettyClient.getInstance().getChannel()==null||(!NettyClient.getInstance().getChannel().isOpen()));
+        //log.error("dodo:"+NettyClient.getInstance().getChannel()==null||(!NettyClient.getInstance().getChannel().isOpen()));
 		/*if(NettyClient.getInstance().getChannel()==null||(!NettyClient.getInstance().getChannel().isOpen())){
 			NettyClient client=NettyClient.getInstance();
 	    	client.setHost(host);

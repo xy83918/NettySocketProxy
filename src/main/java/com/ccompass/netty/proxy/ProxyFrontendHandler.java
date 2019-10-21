@@ -1,20 +1,17 @@
 package com.ccompass.netty.proxy;
 
-import com.ccompass.netty.client.ClientInitializer;
-import com.ccompass.netty.client.NettyClient;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+
+import static com.ccompass.netty.proxy.ChannelCacheManager.CONNECTION_CHANNEL_MAP;
 
 @Slf4j
 public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
@@ -22,123 +19,119 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
     private final String remoteHost;
     private final int remotePort;
     private volatile Channel outboundChannel;
-    private volatile List<Channel> sinkChannelList = new ArrayList<Channel>();
 
     public ProxyFrontendHandler(String remoteHost, int remotePort) {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
-        // 连接数量
-        NettyClient.connects++;
     }
 
     // 连接服务器
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        NettyClient.activeConnects++;
+        log.info("channelActive");
+
         final Channel inboundChannel = ctx.channel();
         // Start the connection attempt.
+
+        CONNECTION_CHANNEL_MAP.put(ServerTypeEnum.ZERO.getId(), inboundChannel);
+
         createMainChannel(ctx, inboundChannel);
-        int i = 0;
+
         //循环创建从链路
-        for (String item : ProxyConfig.config.branchList) {
-            Channel channel = createSinkChannel(ctx, inboundChannel, item, i);
-            //讲各个从链路分别存放到各自的group中
-            NettyClient.sinkGroups.get(i).add(channel);
-            i++;
-        }
+        List<ServerInfo> serverInfos = CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.ONE);
+
+        Channel channel = createSinkChannel(ctx, inboundChannel, serverInfos.get(0));
+
+        CONNECTION_CHANNEL_MAP.put(ServerTypeEnum.ONE.getId(), channel);
+
+
     }
 
     private void createMainChannel(ChannelHandlerContext ctx,
                                    final Channel inboundChannel) {
         // Start the connection attempt.
+
+        log.info("createMainChannel");
         Bootstrap b = new Bootstrap();
         b.group(inboundChannel.eventLoop()).channel(ctx.channel().getClass())
                 .handler(new ProxyBackendHandler(inboundChannel))
                 .option(ChannelOption.AUTO_READ, false);
         ChannelFuture f = b.connect(remoteHost, remotePort);
         outboundChannel = f.channel();
-        NettyClient.group.add(outboundChannel);
+
+
+        CONNECTION_CHANNEL_MAP.put(ServerTypeEnum.MAIN.getId(), outboundChannel);
+
         f.addListener(new ChannelFutureListener() {
+            @Override
             public void operationComplete(ChannelFuture future) {
                 if (future.isSuccess()) {
                     // connection complete start to read first data
+                    log.info("future.isSuccess() " + future.isSuccess());
                     inboundChannel.read();
                 } else {
                     // Close the connection if the connection attempt has
                     // failed.
+                    log.info("future.isSuccess() " + future.isSuccess());
                     inboundChannel.close();
                 }
             }
         });
     }
 
-    private Channel createSinkChannel(ChannelHandlerContext ctx, final Channel inboundChannel, String addressPort, int i) {
+    private Channel createSinkChannel(ChannelHandlerContext ctx, final Channel inboundChannel, ServerInfo serverInfo) {
         // Start the connection attempt.
-        Channel sinkChannel = null;
-        if (ProxyConfig.config.branchNumbers < 0) {
-            sinkChannel = createOneChannel(ctx, inboundChannel, addressPort);
-            sinkChannelList.add(sinkChannel);
-        } else if (ProxyConfig.config.branchNumbers > 0) {
-            if (NettyClient.getInstance().getSinkChannels().get(i).size() <= 0) {
-                sinkChannel = createOneChannel(ctx, inboundChannel, addressPort);
-                NettyClient.getInstance().getSinkChannels().get(i).add(sinkChannel);
-            } else {
-                if (NettyClient.getInstance().getSinkChannels().get(i).size() < ProxyConfig.config.branchNumbers) {
-                    sinkChannel = createOneChannel(ctx, inboundChannel, addressPort);
-                    NettyClient.getInstance().getSinkChannels().get(i).add(sinkChannel);
-                } else {
-                    // 每次链接检测从链接是否断开
-                    int j = 0;
-                    for (Channel channel : NettyClient.getInstance().getSinkChannels().get(i)) {
-                        if (channel == null || (!channel.isOpen())) {
-                            // log.info("*****创建链接，链接列表中如果有断开的，创建链接");
-                            NettyClient.getInstance().getSinkChannels().get(i).remove(j);
-                            sinkChannel = createOneChannel(ctx, inboundChannel, addressPort);
-                            NettyClient.getInstance().getSinkChannels().get(i).add(sinkChannel);
-                        }
-                        j++;
-                    }
-                }
-            }
-        }
+
+        log.info("createSinkChannel");
+        Channel sinkChannel = createOneChannel(ctx, inboundChannel, serverInfo);
+
         return sinkChannel;
+
     }
 
     // （从链路固定）创建一个链接
-    private Channel createOneChannel(ChannelHandlerContext ctx, final Channel inboundChannel, String addressPort) {
+    private Channel createOneChannel(ChannelHandlerContext ctx, final Channel inboundChannel, ServerInfo addressPort) {
+
+        log.info("createOneChannel");
         Bootstrap b = new Bootstrap();
         b.group(inboundChannel.eventLoop())
                 .channel(ctx.channel().getClass())
                 .handler(new ProxyBackendHandler(inboundChannel))
                 .option(ChannelOption.AUTO_READ, false);
-        int n = addressPort.indexOf(':');
-        ChannelFuture f = b.connect(addressPort.substring(0, n), Integer.parseInt(addressPort.substring(n + 1)));
+        ChannelFuture f = b.connect(addressPort.getHost(), addressPort.getPort());
         Channel sinkChannel = f.channel();
-        f.addListener(new ChannelFutureListener() {
+        ChannelFutureListener listener = new ChannelFutureListener() {
+            @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
                     // connection complete start to read first data
+                    log.info("future.isSuccess() " + future.isSuccess());
                     inboundChannel.read();
                 } else {
                     // Close the connection if the connection attempt has failed.
+                    log.info("future.isSuccess() " + future.isSuccess());
+                    log.info("createOneChannel failed  " + future.isSuccess());
                     inboundChannel.close();
                 }
             }
-        });
+        };
+        f.addListener(listener);
         return sinkChannel;
+
     }
 
     // 中断的连接
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        NettyClient.inactiveConnects++;
+
+        log.info("channelInactive");
         closeOnFlush(ctx.channel());
         if (outboundChannel != null) {
             closeOnFlush(outboundChannel);
         }
         // 主从链路一对一
-        if (ProxyConfig.config.branchNumbers < 0) {
-            for (Channel channel : sinkChannelList) {
+        if (CONNECTION_CHANNEL_MAP.size() > 0) {
+            for (Channel channel : CONNECTION_CHANNEL_MAP.values()) {
                 if (channel != null) {
                     closeOnFlush(channel);
                 }
@@ -149,22 +142,25 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
     // 客户端发送数据
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
-        // 请求数量
-        NettyClient.requests++;
+
+        log.info("channelRead");
 
         ByteBuf buf = (ByteBuf) msg;
         List<ByteBuf> bufList = new ArrayList<ByteBuf>();
-        for (int i = 0; i < ProxyConfig.config.branchList.size(); i++) {
+        for (int i = 0; i < CONNECTION_CHANNEL_MAP.size(); i++) {
             bufList.add(buf.copy());
         }
 
         if (outboundChannel.isActive() && outboundChannel.isOpen()) {
             outboundChannel.writeAndFlush(msg).addListener(
                     new ChannelFutureListener() {
+                        @Override
                         public void operationComplete(ChannelFuture future) {
                             if (future.isSuccess()) {
+                                log.info("future.isSuccess() " + future.isSuccess());
                                 ctx.channel().read();
                             } else {
+                                log.info("future.isSuccess() " + future.isSuccess());
                                 future.channel().close();
                             }
                         }
@@ -179,23 +175,29 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
             ChannelFuture f = b.connect(remoteHost, remotePort);
             outboundChannel = f.channel();
             f.addListener(new ChannelFutureListener() {
+                @Override
                 public void operationComplete(ChannelFuture future) {
                     if (future.isSuccess()) {
                         // connection complete start to read first data
+                        log.info("future.isSuccess() " + future.isSuccess());
                         inboundChannel.read();
                     } else {
                         // Close the connection if the connection attempt has
                         // failed.
+                        log.info("future.isSuccess() " + future.isSuccess());
                         inboundChannel.close();
                     }
                 }
             });
             outboundChannel.writeAndFlush(msg).addListener(
                     new ChannelFutureListener() {
+                        @Override
                         public void operationComplete(ChannelFuture future) {
                             if (future.isSuccess()) {
+                                log.info("future.isSuccess() " + future.isSuccess());
                                 ctx.channel().read();
                             } else {
+                                log.info("future.isSuccess() " + future.isSuccess());
                                 future.channel().close();
                             }
                         }
@@ -205,76 +207,45 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         final Channel inboundChannel = ctx.channel();
         // 从连接发送数据
         if (msg != null) {
-            if (ProxyConfig.config.branchNumbers < 0) {
-                try {
-                    for (int i = 0; i < sinkChannelList.size(); i++) {
-                        Channel ch = sinkChannelList.get(i);
-                        if (ch.isActive()) {
-                            ch.writeAndFlush(bufList.get(i)).addListener(new ChannelFutureListener() {
-                                public void operationComplete(ChannelFuture future) throws Exception {
-                                    if (future.isSuccess()) {
-                                        // was able to flush out data, start to read the next chunk
-                                        ctx.channel().read();
-                                    } else {
-                                        future.channel().close();
-                                    }
+
+            Channel ch = CONNECTION_CHANNEL_MAP.get(ServerTypeEnum.ONE.getId());
+
+            log.info(String.valueOf(CONNECTION_CHANNEL_MAP));
+            if (ch.isActive()) {
+                ch
+                        .writeAndFlush(
+                                bufList.get(0))
+                        .addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(ChannelFuture future) throws Exception {
+                                if (future.isSuccess()) {
+                                    log.info("future.isSuccess() " + future.isSuccess());
+                                    // was able to flush out data, start to read the next chunk
+                                    ctx.channel().read();
+                                } else {
+                                    log.info("future.isSuccess() " + future.isSuccess());
+                                    future.channel().close();
                                 }
-                            });
+                            }
+                        });
+            } else {
+
+                List<ServerInfo> serverInfos = CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.FOUR);
+                ch = createSinkChannel(ctx, inboundChannel, serverInfos.get(0));
+                //讲各个从链路分别存放到各自的group中
+                ch.writeAndFlush(msg).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if (future.isSuccess()) {
+                            // was able to flush out data, start to read the next chunk
+                            log.info("future.isSuccess() " + future.isSuccess());
+                            ctx.channel().read();
                         } else {
-                            sinkChannelList.remove(i);
-                            String channelStr = ProxyConfig.config.branchList.get(i);
-                            ch = createSinkChannel(ctx, inboundChannel, channelStr, i);
-                            //讲各个从链路分别存放到各自的group中
-                            NettyClient.sinkGroups.get(i).add(ch);
-                            ch.writeAndFlush(bufList.get(i)).addListener(new ChannelFutureListener() {
-                                public void operationComplete(ChannelFuture future) throws Exception {
-                                    if (future.isSuccess()) {
-                                        // was able to flush out data, start to read the next chunk
-                                        ctx.channel().read();
-                                    } else {
-                                        future.channel().close();
-                                    }
-                                }
-                            });
+                            log.info("future.isSuccess() " + future.isSuccess());
+                            future.channel().close();
                         }
                     }
-                } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-            } else if (ProxyConfig.config.branchNumbers > 0) {
-                for (int i = 0; i < ProxyConfig.config.branchList.size(); i++) {
-                    if (NettyClient.getInstance().getSinkChannels().get(i).size() <= 0) {
-                        String channelStr = ProxyConfig.config.branchList.get(i);
-                        Channel channel = createOneChannel(ctx, inboundChannel, channelStr);
-                        NettyClient.getInstance().getSinkChannels().get(i).add(channel);
-                        try {
-                            channel.writeAndFlush(bufList.get(i)).sync();
-                        } catch (InterruptedException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                    } else {
-                        // 随机取一个链路
-                        int theChannel = new Random().nextInt(NettyClient.getInstance().getSinkChannels().get(i).size());
-                        log.info("*****读数据，链接数：" +
-                                NettyClient.getInstance().getChannels().size());
-                        Channel channel = NettyClient.getInstance().getSinkChannels().get(i).get(theChannel);
-                        if (channel == null || (!channel.isOpen()) || (!channel.isActive())) {
-                            log.info("*****读数据，链接为空，或者关闭，打开链接");
-                            NettyClient.getInstance().getSinkChannels().get(i).remove(theChannel);
-                            String channelStr = ProxyConfig.config.branchList.get(i);
-                            channel = createOneChannel(ctx, inboundChannel, channelStr);
-                            NettyClient.getInstance().getSinkChannels().get(i).add(channel);
-                        }
-                        try {
-                            channel.writeAndFlush(bufList.get(i)).sync();
-                        } catch (InterruptedException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                    }
-                }
+                });
             }
         }
     }
@@ -306,17 +277,16 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
     // 出异常的连接
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        NettyClient.exceptions++;
-        // cause.printStackTrace();//日志打印
-        log.info("**********链路异常，异常信息：" + cause.getMessage());
+
+        log.info("**********exceptionCaught，异常信息：" + cause.getMessage(), cause);
 		/*closeOnFlush(ctx.channel());
 		// 出异常关闭主从链接
 		if (outboundChannel != null) {
 			closeOnFlush(outboundChannel);
 		}*/
         // 主从链路一对一
-        if (ProxyConfig.config.branchNumbers < 0) {
-            for (Channel channel : sinkChannelList) {
+        if (CONNECTION_CHANNEL_MAP.size() > 0) {
+            for (Channel channel : CONNECTION_CHANNEL_MAP.values()) {
                 if (channel != null) {
                     closeOnFlush(channel);
                 }
@@ -334,66 +304,4 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    /**
-     * 通过自己的客户端创建从链路
-     *
-     * @param ctx
-     * @param inboundChannel
-     * @param addressPort
-     * @param i
-     * @return
-     */
-    private Channel createSinkChannelWithClient(ChannelHandlerContext ctx, final Channel inboundChannel, String addressPort, int i) {
-        // Start the connection attempt.
-        Channel sinkChannel = null;
-        if (ProxyConfig.config.branchNumbers < 0) {
-            sinkChannel = createOneChannelWithClient(ctx, inboundChannel, addressPort);
-            sinkChannelList.add(sinkChannel);
-        } else if (ProxyConfig.config.branchNumbers > 0) {
-            if (NettyClient.getInstance().getSinkChannels().get(i).size() <= 0) {
-                sinkChannel = createOneChannelWithClient(ctx, inboundChannel, addressPort);
-                NettyClient.getInstance().getSinkChannels().get(i).add(sinkChannel);
-            } else {
-                if (NettyClient.getInstance().getSinkChannels().get(i).size() < ProxyConfig.config.branchNumbers) {
-                    sinkChannel = createOneChannelWithClient(ctx, inboundChannel, addressPort);
-                    NettyClient.getInstance().getSinkChannels().get(i).add(sinkChannel);
-                } else {
-                    // 每次链接检测从链接是否断开
-                    int j = 0;
-                    for (Channel channel : NettyClient.getInstance().getSinkChannels().get(i)) {
-                        if (channel == null || (!channel.isOpen())) {
-                            log.info("*****创建链接，链接列表中如果有断开的，创建链接");
-                            NettyClient.getInstance().getSinkChannels().get(i).remove(j);
-                            sinkChannel = createOneChannelWithClient(ctx, inboundChannel, addressPort);
-                            NettyClient.getInstance().getSinkChannels().get(i).add(sinkChannel);
-                        }
-                        j++;
-                    }
-                }
-            }
-        }
-        return sinkChannel;
-    }
-
-    private Channel createOneChannelWithClient(ChannelHandlerContext ctx, final Channel inboundChannel, String addressPort) {
-        EventLoopGroup group = new NioEventLoopGroup();
-        Bootstrap b = new Bootstrap();
-        b.group(group).channel(NioSocketChannel.class).handler(new ClientInitializer());
-        b.option(ChannelOption.SO_KEEPALIVE, true);
-        int n = addressPort.indexOf(':');
-        ChannelFuture f = b.connect(addressPort.substring(0, n), Integer.parseInt(addressPort.substring(n + 1)));
-        Channel sinkChannel = f.channel();
-        f.addListener(new ChannelFutureListener() {
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    // connection complete start to read first data
-                    inboundChannel.read();
-                } else {
-                    // Close the connection if the connection attempt has failed.
-                    inboundChannel.close();
-                }
-            }
-        });
-        return sinkChannel;
-    }
 }
