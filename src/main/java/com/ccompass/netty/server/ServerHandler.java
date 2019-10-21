@@ -2,28 +2,18 @@ package com.ccompass.netty.server;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import lombok.extern.slf4j.Slf4j;
 
-import java.net.InetAddress;
-
-public class ServerHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+@Slf4j
+public class ServerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame msg) throws Exception {
-
-        System.out.println("received");
-
-        byte[] content = new byte[msg.content().capacity()];
-        msg.content().readBytes(content);
-
-        String s = String.valueOf(content);
-
-        System.out.println(s);
+    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         // 收到消息直接打印输出
-        System.out.println(ctx.channel().remoteAddress() + " Say : " + s);
+        log.info(ctx.channel().remoteAddress() + " Say : " + msg);
 
         // 返回客户端消息 - 我已经接收到了你的消息
-        ctx.writeAndFlush(msg);
+        ctx.channel().writeAndFlush(ctx.channel().localAddress() + " Received your message !\n");
     }
 
     /*
@@ -35,10 +25,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 
-        System.out.println("RamoteAddress : " + ctx.channel().remoteAddress() + " active !");
-
-
-        ctx.writeAndFlush("Welcome to " + InetAddress.getLocalHost().getHostName() + " service!\n");
+        log.info("RemoteAddress : " + ctx.channel().remoteAddress() + " active !");
 
         super.channelActive(ctx);
     }

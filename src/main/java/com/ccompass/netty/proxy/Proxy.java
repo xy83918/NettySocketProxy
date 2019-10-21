@@ -15,54 +15,52 @@
   */
  package com.ccompass.netty.proxy;
 
- import com.ccompass.netty.client.NettyClient;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import lombok.extern.slf4j.Slf4j;
+ import io.netty.bootstrap.ServerBootstrap;
+ import io.netty.channel.ChannelFuture;
+ import io.netty.channel.ChannelOption;
+ import io.netty.channel.EventLoopGroup;
+ import io.netty.channel.nio.NioEventLoopGroup;
+ import io.netty.channel.socket.nio.NioServerSocketChannel;
+ import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
+ import java.util.List;
+
+ import static com.ccompass.netty.proxy.CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP;
 
  @Slf4j
  public final class Proxy {
      public static void main(String[] args) throws Exception {
-         ProxyConfig.loadConfig();
-         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+
+         log.info("Proxy服务器开始启动：");
+
+         EventLoopGroup bossGroup = new NioEventLoopGroup();
          EventLoopGroup workerGroup = new NioEventLoopGroup();
          //初始化从链路grops
-         for (int i = 0; i < ProxyConfig.config.branchList.size(); i++) {
-             ChannelGroup group = new DefaultChannelGroup("server-group", null);
-             NettyClient.sinkGroups.add(group);
-         }
-         //如果重联路限定，初始化从链路对象存储列表
-         if (ProxyConfig.config.branchNumbers > 0) {
-             List<List<Channel>> list = new ArrayList();
-             for (int i = 0; i < ProxyConfig.config.branchList.size(); i++) {
-                 List<Channel> channels = new ArrayList<Channel>();
-                 list.add(channels);
-             }
-             NettyClient.setSinkChannels(list);
-         }
+
+         List<ServerInfo> serverInfos = SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.MAIN);
+
+         Integer port = SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.FOUR).get(0).getPort();
          try {
              ServerBootstrap b = new ServerBootstrap();
              b.group(bossGroup, workerGroup)
                      .channel(NioServerSocketChannel.class)
                      //    .handler(new LoggingHandler(LogLevel.INFO))
-                     .childHandler(new ProxyInitializer(ProxyConfig.config.mainIP, ProxyConfig.config.mainPort))
-                     .childOption(ChannelOption.AUTO_READ, false)
-                     .bind(ProxyConfig.config.proxyPort).sync().channel().closeFuture().sync();
+                     .childHandler(new ProxyInitializer(serverInfos.get(0)))
+                     .childOption(ChannelOption.AUTO_READ, false);
+
+             ChannelFuture future = b.bind(port).sync();
+             log.info("Proxy服务器启动成功：监听端口：" + port);
+
+             future.channel().closeFuture().sync();
+
+
          } finally {
              bossGroup.shutdownGracefully();
              workerGroup.shutdownGracefully();
          }
-     }
 
+
+     }
 
 
  }

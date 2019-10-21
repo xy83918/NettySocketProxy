@@ -2,12 +2,10 @@ package com.ccompass.netty.proxy;
 
 
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.*;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
 
     private final Channel inboundChannel;
@@ -23,8 +21,14 @@ public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        ProxyFrontendHandler.closeOnFlush(inboundChannel);
+    }
+
+    @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
         inboundChannel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
+            @Override
             public void operationComplete(ChannelFuture future) {
                 if (future.isSuccess()) {
                     ctx.channel().read();
@@ -36,14 +40,9 @@ public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        ProxyFrontendHandler.closeOnFlush(inboundChannel);
-    }
-
-    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-      //  cause.printStackTrace();
-    	System.err.println("***************终止一个连接");
+        //  cause.printStackTrace();
+        log.error("***************终止一个连接");
         ProxyFrontendHandler.closeOnFlush(ctx.channel());
     }
 }

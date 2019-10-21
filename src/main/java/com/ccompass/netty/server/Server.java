@@ -58,7 +58,7 @@ public class Server {
                     });
             // 服务器绑定端口监听
             ChannelFuture f = b.bind(portNumber).sync();
-            System.out.println("服务器启动成功：监听端口：" + portNumber);
+            log.info("服务器启动成功：监听端口：" + portNumber);
             // 监听服务器关闭监听
             f.channel().closeFuture().sync();
         } finally {

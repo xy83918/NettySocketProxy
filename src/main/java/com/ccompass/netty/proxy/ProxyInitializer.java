@@ -26,16 +26,18 @@ public class ProxyInitializer extends ChannelInitializer<SocketChannel> {
     private final String remoteHost;
     private final int remotePort;
 
-    public ProxyInitializer(String remoteHost, int remotePort) {
-        this.remoteHost = remoteHost;
-        this.remotePort = remotePort;
+    public ProxyInitializer(ServerInfo serverInfo) {
+        this.remoteHost = serverInfo.getHost();
+        this.remotePort = serverInfo.getPort();
     }
 
     @Override
     public void initChannel(SocketChannel ch) {
         ch.pipeline().addLast(new IdleStateHandler(3600, 0, 0));
-        ch.pipeline().addLast(
-                new LoggingHandler(LogLevel.INFO),//请求日志
-                new ProxyFrontendHandler(remoteHost, remotePort));
+
+        //请求日志
+        ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+        ch.pipeline().addLast(new ProxyFrontendHandler(remoteHost, remotePort));
+        ch.pipeline().addLast(new ExceptionCaughtHandler());
     }
 }
