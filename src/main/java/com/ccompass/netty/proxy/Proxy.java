@@ -15,21 +15,19 @@
   */
  package com.ccompass.netty.proxy;
 
- import com.ccompass.netty.client.CheckSinkChannel;
  import com.ccompass.netty.client.NettyClient;
- import io.netty.bootstrap.ServerBootstrap;
- import io.netty.channel.Channel;
- import io.netty.channel.ChannelOption;
- import io.netty.channel.EventLoopGroup;
- import io.netty.channel.group.ChannelGroup;
- import io.netty.channel.group.DefaultChannelGroup;
- import io.netty.channel.nio.NioEventLoopGroup;
- import io.netty.channel.socket.nio.NioServerSocketChannel;
- import lombok.extern.slf4j.Slf4j;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import lombok.extern.slf4j.Slf4j;
 
- import java.util.ArrayList;
- import java.util.List;
- import java.util.Timer;
+import java.util.ArrayList;
+import java.util.List;
 
  @Slf4j
  public final class Proxy {
@@ -37,7 +35,6 @@
          ProxyConfig.loadConfig();
          EventLoopGroup bossGroup = new NioEventLoopGroup(1);
          EventLoopGroup workerGroup = new NioEventLoopGroup();
-         checkOtherChannel(ProxyConfig.config.checktimes);
          //初始化从链路grops
          for (int i = 0; i < ProxyConfig.config.branchList.size(); i++) {
              ChannelGroup group = new DefaultChannelGroup("server-group", null);
@@ -67,18 +64,5 @@
      }
 
 
-     public static void checkOtherChannel(long period) {
-         Timer timer = new Timer();
-         long delay = 1 * 1000;
-         String sinkChannel = ProxyConfig.config.branchList.get(0);
-         log.info(sinkChannel);
-         String[] sinkCh = sinkChannel.split(":");
-         //创建从连接
-         NettyClient client = NettyClient.getInstance();
-         client.setHost(sinkCh[0]);
-         client.setPort(Integer.parseInt(sinkCh[1]));
-         client.connect();
-         //每一段时间检查从连接是否连接
-         timer.schedule(new CheckSinkChannel(sinkCh[0], Integer.parseInt(sinkCh[1])), delay, period);
-     }
+
  }

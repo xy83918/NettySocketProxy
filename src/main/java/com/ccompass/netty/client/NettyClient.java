@@ -119,7 +119,7 @@ public class NettyClient implements Cloneable {
     }
 
     public void setChannel(Channel channel) {
-        this.channel = channel;
+        NettyClient.channel = channel;
     }
 
     /**
@@ -131,10 +131,10 @@ public class NettyClient implements Cloneable {
     public void sendMsg(Object msg) throws Exception {
         if (msg != null && msg instanceof UnpooledUnsafeDirectByteBuf) {
             UnpooledUnsafeDirectByteBuf buf = (UnpooledUnsafeDirectByteBuf) msg;
-            this.channel.writeAndFlush(buf.copy());
+            channel.writeAndFlush(buf.copy());
         } else {
             ByteBuf oc = (ByteBuf) msg;
-            this.channel.writeAndFlush(oc.copy());
+            channel.writeAndFlush(oc.copy());
         }
     }
 

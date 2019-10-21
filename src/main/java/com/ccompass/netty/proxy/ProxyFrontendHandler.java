@@ -59,7 +59,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         outboundChannel = f.channel();
         NettyClient.group.add(outboundChannel);
         f.addListener(new ChannelFutureListener() {
-            @Override
             public void operationComplete(ChannelFuture future) {
                 if (future.isSuccess()) {
                     // connection complete start to read first data
@@ -116,7 +115,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         ChannelFuture f = b.connect(addressPort.substring(0, n), Integer.parseInt(addressPort.substring(n + 1)));
         Channel sinkChannel = f.channel();
         f.addListener(new ChannelFutureListener() {
-            @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
                     // connection complete start to read first data
@@ -163,7 +161,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         if (outboundChannel.isActive() && outboundChannel.isOpen()) {
             outboundChannel.writeAndFlush(msg).addListener(
                     new ChannelFutureListener() {
-                        @Override
                         public void operationComplete(ChannelFuture future) {
                             if (future.isSuccess()) {
                                 ctx.channel().read();
@@ -182,7 +179,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
             ChannelFuture f = b.connect(remoteHost, remotePort);
             outboundChannel = f.channel();
             f.addListener(new ChannelFutureListener() {
-                @Override
                 public void operationComplete(ChannelFuture future) {
                     if (future.isSuccess()) {
                         // connection complete start to read first data
@@ -196,7 +192,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
             });
             outboundChannel.writeAndFlush(msg).addListener(
                     new ChannelFutureListener() {
-                        @Override
                         public void operationComplete(ChannelFuture future) {
                             if (future.isSuccess()) {
                                 ctx.channel().read();
@@ -216,7 +211,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
                         Channel ch = sinkChannelList.get(i);
                         if (ch.isActive()) {
                             ch.writeAndFlush(bufList.get(i)).addListener(new ChannelFutureListener() {
-                                @Override
                                 public void operationComplete(ChannelFuture future) throws Exception {
                                     if (future.isSuccess()) {
                                         // was able to flush out data, start to read the next chunk
@@ -233,7 +227,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
                             //讲各个从链路分别存放到各自的group中
                             NettyClient.sinkGroups.get(i).add(ch);
                             ch.writeAndFlush(bufList.get(i)).addListener(new ChannelFutureListener() {
-                                @Override
                                 public void operationComplete(ChannelFuture future) throws Exception {
                                     if (future.isSuccess()) {
                                         // was able to flush out data, start to read the next chunk
@@ -391,7 +384,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         ChannelFuture f = b.connect(addressPort.substring(0, n), Integer.parseInt(addressPort.substring(n + 1)));
         Channel sinkChannel = f.channel();
         f.addListener(new ChannelFutureListener() {
-            @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
                     // connection complete start to read first data
