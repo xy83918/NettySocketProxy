@@ -1,4 +1,4 @@
-package com.ccompass.netty.proxy;
+package com.ccompass.netty.proxy.biz;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -15,6 +15,8 @@
   */
  package com.ccompass.netty.proxy;
 
+ import com.ccompass.netty.proxy.biz.ServerInfo;
+ import com.ccompass.netty.proxy.biz.ServerTypeEnum;
  import io.netty.bootstrap.ServerBootstrap;
  import io.netty.channel.ChannelFuture;
  import io.netty.channel.ChannelOption;
@@ -25,7 +27,7 @@
 
  import java.util.List;
 
- import static com.ccompass.netty.proxy.CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP;
+ import static com.ccompass.netty.proxy.biz.CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP;
 
  @Slf4j
  public final class Proxy {

@@ -7,7 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.ccompass.netty.proxy.ChannelCacheManager.CONNECTION_CHANNEL_MAP;
+import static com.ccompass.netty.proxy.biz.ChannelCacheManager.CONNECTION_CHANNEL_MAP;
 
 @Slf4j
 public class ExceptionCaughtHandler extends ChannelInboundHandlerAdapter {

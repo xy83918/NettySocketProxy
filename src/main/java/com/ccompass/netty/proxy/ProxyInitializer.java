@@ -15,6 +15,7 @@
  */
 package com.ccompass.netty.proxy;
 
+import com.ccompass.netty.proxy.biz.ServerInfo;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;
