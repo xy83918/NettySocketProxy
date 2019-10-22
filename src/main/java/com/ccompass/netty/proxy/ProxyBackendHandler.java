@@ -1,10 +1,19 @@
 package com.ccompass.netty.proxy;
 
 
+import com.ccompass.netty.proxy.biz.ChannelHelper;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.ccompass.netty.proxy.ExceptionCaughtHandler.closeOnFlush;
+
+/**
+ * @author albert on 10/22/19 11:57 AM
+ */
 @Slf4j
 public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
 
@@ -24,35 +33,26 @@ public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-
         log.info("channelInactive");
-        ProxyFrontendHandler.closeOnFlush(inboundChannel);
+        closeOnFlush(inboundChannel);
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
 
         log.info("channelRead");
-        inboundChannel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) {
-                if (future.isSuccess()) {
+        Channel inbound = ChannelHelper.getInboundChannelByArbitrarily(ctx.channel());
+        inboundChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
 
-                    log.info("future.isSuccess() " + future.isSuccess());
-                    ctx.channel().read();
-                } else {
+                log.info("future.isSuccess() " + future.isSuccess());
+                ctx.channel().read();
+            } else {
 
-                    log.info("future.isSuccess() " + future.isSuccess());
-                    future.channel().close();
-                }
+                log.info("future.isSuccess() " + future.isSuccess());
+                future.channel().close();
             }
         });
     }
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-
-        log.error("***************终止一个连接 {}", cause);
-        ProxyFrontendHandler.closeOnFlush(ctx.channel());
-    }
 }

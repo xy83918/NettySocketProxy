@@ -22,7 +22,7 @@ public class Client {
 
 
     @Parameter(names = {"--playerId", "-p"})
-    private static String userId;
+    private static String playerId;
 
     /**
      * @param args
@@ -39,7 +39,7 @@ public class Client {
                 .build()
                 .parse(args);
 
-        log.info(String.valueOf(userId));
+        log.info(String.valueOf(playerId));
 
 
         EventLoopGroup group = new NioEventLoopGroup();
@@ -56,6 +56,10 @@ public class Client {
 
             // 控制台输入
             BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+            //数据传输格式  playerId,serviceId,data
+
+            //console输入 1,data 2,data
+
             for (; ; ) {
                 String line = in.readLine();
                 if (line == null) {
@@ -67,7 +71,7 @@ public class Client {
                  * 之所以用\r\n结尾 是因为我们在handler中添加了 DelimiterBasedFrameDecoder 帧解码。
                  * 这个解码器是一个根据\n符号位分隔符的解码器。所以每条消息的最后必须加上\n否则无法识别和解码
                  * */
-                ch.writeAndFlush(line + FINISH_FLAG);
+                ch.writeAndFlush(playerId + "," + line + FINISH_FLAG);
             }
         } finally {
             // The connection is closed automatically on shutdown.

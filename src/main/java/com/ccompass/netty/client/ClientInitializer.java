@@ -29,6 +29,6 @@ public class ClientInitializer extends ChannelInitializer<SocketChannel> {
         // 客户端的逻辑
         pipeline.addLast("handler", new ClientHandler());
 
-        pipeline.addLast(new ExceptionCaughtHandler());
+        pipeline.addLast("exceptionCaughtHandler", new ExceptionCaughtHandler());
     }
 }

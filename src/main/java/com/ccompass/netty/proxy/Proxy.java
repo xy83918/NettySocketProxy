@@ -15,43 +15,71 @@
   */
  package com.ccompass.netty.proxy;
 
- import com.ccompass.netty.proxy.biz.ServerInfo;
- import com.ccompass.netty.proxy.biz.ServerTypeEnum;
- import io.netty.bootstrap.ServerBootstrap;
- import io.netty.channel.ChannelFuture;
- import io.netty.channel.ChannelOption;
- import io.netty.channel.EventLoopGroup;
- import io.netty.channel.nio.NioEventLoopGroup;
- import io.netty.channel.socket.nio.NioServerSocketChannel;
- import lombok.extern.slf4j.Slf4j;
+ import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.ccompass.netty.proxy.biz.ServerInfo;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import lombok.extern.slf4j.Slf4j;
 
- import java.util.List;
-
- import static com.ccompass.netty.proxy.biz.CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP;
-
+ /**
+  * @author albert on 10/22/19 10:34 AM
+  */
  @Slf4j
  public final class Proxy {
+
+
+     @Parameter(names = {"--host", "-h"})
+     private static String host = "127.0.0.1";
+
+     @Parameter(names = {"--port", "-p"})
+     private static int port = 7800;
+
+     @Parameter(names = {"--listen", "-l"})
+     private static int listenPort = 7100;
+
      public static void main(String[] args) throws Exception {
 
+
          log.info("Proxy服务器开始启动：");
+
+
+         Proxy main = new Proxy();
+
+         JCommander.newBuilder()
+                 .addObject(main)
+                 .build()
+                 .parse(args);
+
+         log.info(String.valueOf(host));
+         log.info(String.valueOf(port));
+         log.info(String.valueOf(listenPort));
+
 
          EventLoopGroup bossGroup = new NioEventLoopGroup();
          EventLoopGroup workerGroup = new NioEventLoopGroup();
          //初始化从链路grops
 
-         List<ServerInfo> serverInfos = SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.MAIN);
-
-         Integer port = SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.FOUR).get(0).getPort();
          try {
              ServerBootstrap b = new ServerBootstrap();
              b.group(bossGroup, workerGroup)
                      .channel(NioServerSocketChannel.class)
                      //    .handler(new LoggingHandler(LogLevel.INFO))
-                     .childHandler(new ProxyInitializer(serverInfos.get(0)))
+                     .childHandler(new ProxyInitializer(ServerInfo.builder()
+                             .host(host)
+                             .port(port)
+                             .build()))
                      .childOption(ChannelOption.AUTO_READ, false);
 
-             ChannelFuture future = b.bind(port).sync();
-             log.info("Proxy服务器启动成功：监听端口：" + port);
+             ChannelFuture future = b.bind(listenPort).sync();
+
+             log.info("Proxy服务器启动成功mian：监听端口：" + host);
+             log.info("Proxy服务器启动成功port：监听端口：" + port);
+             log.info("Proxy服务器启动成功：监听端口：" + listenPort);
 
              future.channel().closeFuture().sync();
 

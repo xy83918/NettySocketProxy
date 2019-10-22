@@ -28,7 +28,7 @@ public class ServerInitializer extends ChannelInitializer<SocketChannel> {
 
         // 自己的逻辑Handler
         pipeline.addLast("handler", new ServerHandler());
-        pipeline.addLast(new ExceptionCaughtHandler());
+        pipeline.addLast("exceptionCaughtHandler", new ExceptionCaughtHandler());
 
     }
 }

@@ -7,7 +7,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.ccompass.netty.proxy.biz.ChannelCacheManager.CONNECTION_CHANNEL_MAP;
+import java.util.Set;
+
+import static com.ccompass.netty.proxy.biz.ChannelHelper.getAllRelationChannel;
 
 @Slf4j
 public class ExceptionCaughtHandler extends ChannelInboundHandlerAdapter {
@@ -19,8 +21,10 @@ public class ExceptionCaughtHandler extends ChannelInboundHandlerAdapter {
 
         log.info("**********链路异常，异常信息：" + cause.getMessage(), cause);
 
-        if (CONNECTION_CHANNEL_MAP.size() > 0) {
-            for (Channel channel : CONNECTION_CHANNEL_MAP.values()) {
+
+        Set<Channel> allRelationChannel = getAllRelationChannel(ctx.channel());
+        if (allRelationChannel.size() > 0) {
+            for (Channel channel : allRelationChannel) {
                 if (channel != null) {
                     closeOnFlush(channel);
                 }
@@ -31,7 +35,7 @@ public class ExceptionCaughtHandler extends ChannelInboundHandlerAdapter {
     /**
      * Closes the specified channel after all queued write requests are flushed.
      */
-    static void closeOnFlush(Channel ch) {
+    public static void closeOnFlush(Channel ch) {
         if (ch.isActive()) {
             ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(
                     ChannelFutureListener.CLOSE);
