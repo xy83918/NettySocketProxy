@@ -69,7 +69,7 @@ import lombok.extern.slf4j.Slf4j;
              b.group(bossGroup, workerGroup)
                      .channel(NioServerSocketChannel.class)
                      //    .handler(new LoggingHandler(LogLevel.INFO))
-                     .childHandler(new ProxyInitializer(ServerInfo.builder()
+                     .childHandler(new ProxyFrontEndInitializer(ServerInfo.builder()
                              .host(host)
                              .port(port)
                              .build()))

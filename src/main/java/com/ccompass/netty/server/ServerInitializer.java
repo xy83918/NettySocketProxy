@@ -19,14 +19,10 @@ public class ServerInitializer extends ChannelInitializer<SocketChannel> {
         //请求日志
         pipeline.addLast(new LoggingHandler(LogLevel.TRACE));
         pipeline.addLast(new HttpServerCodec());
-        pipeline.addLast(new LoggingHandler(LogLevel.INFO));
         pipeline.addLast(new HttpObjectAggregator(65536));
-        pipeline.addLast(new LoggingHandler(LogLevel.INFO));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
-        pipeline.addLast(new LoggingHandler(LogLevel.INFO));
         // 自己的逻辑Handler
         pipeline.addLast("handler", new WebSocketFrameHandler());
-        pipeline.addLast(new LoggingHandler(LogLevel.INFO));
         pipeline.addLast("exceptionCaughtHandler", new ExceptionCaughtHandler());
 
     }

@@ -24,7 +24,7 @@ public class Client {
 
     public static final String FINISH_FLAG = "\r\n";
     public static String host = "127.0.0.1";
-    public static int port = 7800;
+    public static int port = 7100;
 
 
     @Parameter(names = {"--playerId", "-p"})

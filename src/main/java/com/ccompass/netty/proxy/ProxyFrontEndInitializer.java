@@ -17,28 +17,39 @@ package com.ccompass.netty.proxy;
 
 import com.ccompass.netty.bizz.ServerInfo;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 
-public class ProxyInitializer extends ChannelInitializer<SocketChannel> {
+/**
+ * @author albert on 10/23/19 3:10 PM
+ */
+public class ProxyFrontEndInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final String remoteHost;
-    private final int remotePort;
 
-    public ProxyInitializer(ServerInfo serverInfo) {
-        this.remoteHost = serverInfo.getHost();
-        this.remotePort = serverInfo.getPort();
+    private final ServerInfo serverInfo;
+
+    public ProxyFrontEndInitializer(ServerInfo serverInfo) {
+        this.serverInfo = serverInfo;
     }
 
     @Override
     public void initChannel(SocketChannel ch) {
-        ch.pipeline().addLast(new IdleStateHandler(3600, 0, 0));
+
+        ChannelPipeline pipeline = ch.pipeline();
+        pipeline.addLast(new IdleStateHandler(3600, 0, 0));
 
         //请求日志
-        ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-        ch.pipeline().addLast(new ProxyFrontendHandler(remoteHost, remotePort));
-        ch.pipeline().addLast(new ExceptionCaughtHandler());
+        pipeline.addLast(new LoggingHandler(LogLevel.INFO));
+        pipeline.addLast(new HttpServerCodec());
+        pipeline.addLast(new HttpObjectAggregator(65536));
+        pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
+        pipeline.addLast(new ProxyFrontendHandler(serverInfo));
+        pipeline.addLast(new ExceptionCaughtHandler());
     }
 }

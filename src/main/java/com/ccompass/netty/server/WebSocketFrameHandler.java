@@ -47,7 +47,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             ByteBuf bf = frame.content();
             byte[] byteArray = new byte[bf.capacity()];
             bf.readBytes(byteArray);
-            String result = new String(byteArray);
+            String result = ctx.channel().localAddress() +" "+ new String(byteArray);
 
             log.info("server received BinaryWebSocketFrame message :  {}", result);
             ctx.channel().writeAndFlush(new BinaryWebSocketFrame(Unpooled.copiedBuffer(result.getBytes())));

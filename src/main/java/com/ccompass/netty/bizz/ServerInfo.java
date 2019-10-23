@@ -13,8 +13,9 @@ import lombok.*;
 public class ServerInfo {
 
     private String instanceId;
-    private ServiceTypeEnum serviceTypeEnum;
     private String host;
+    private String path;
     private Integer port;
+    private ServiceTypeEnum serviceTypeEnum;
 
 }

@@ -44,6 +44,11 @@ import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.ccompass.netty.bizz.RealServerChannelCache.CHANNEL_TREE_SET;
+
+/**
+ * @author albert on 10/23/19 4:42 PM
+ */
 @Slf4j
 public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
 
@@ -66,12 +71,13 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        log.info("WebSocketClientHandler channelActive");
         handshaker.handshake(ctx.channel());
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        System.out.println("WebSocket Client disconnected!");
+        log.info("WebSocket Client disconnected!");
     }
 
     @Override
@@ -83,16 +89,18 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         ctx.close();
     }
 
+
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+        log.info("WebSocketClientHandler channelRead0");
         Channel ch = ctx.channel();
         if (!handshaker.isHandshakeComplete()) {
             try {
                 handshaker.finishHandshake(ch, (FullHttpResponse) msg);
-                System.out.println("WebSocket Client connected!");
+                log.info("WebSocket Client connected!");
                 handshakeFuture.setSuccess();
             } catch (WebSocketHandshakeException e) {
-                System.out.println("WebSocket Client failed to connect");
+                log.info("WebSocket Client failed to connect");
                 handshakeFuture.setFailure(e);
             }
             return;
@@ -109,7 +117,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         if (frame instanceof TextWebSocketFrame) {
 
             TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
-            System.out.println("WebSocket Client received TextWebSocketFrame message: " + textFrame.text());
+            log.info("WebSocket Client received TextWebSocketFrame message: " + textFrame.text());
 
         } else if (frame instanceof BinaryWebSocketFrame) {
 
@@ -118,11 +126,12 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
             bf.readBytes(byteArray);
             String result = new String(byteArray);
 
-            System.out.println("WebSocket Client received BinaryWebSocketFrame message: " + result);
+            log.info("WebSocket Client received BinaryWebSocketFrame message: " + result);
+            CHANNEL_TREE_SET.first().writeAndFlush(msg);
         } else if (frame instanceof PongWebSocketFrame) {
-            System.out.println("WebSocket Client received PongWebSocketFrame pong");
+            log.info("WebSocket Client received PongWebSocketFrame pong");
         } else if (frame instanceof CloseWebSocketFrame) {
-            System.out.println("WebSocket Client received CloseWebSocketFrame closing");
+            log.info("WebSocket Client received CloseWebSocketFrame closing");
             ch.close();
         }
     }

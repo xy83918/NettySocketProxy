@@ -1,30 +1,40 @@
 package com.ccompass.netty.proxy;
 
 import com.ccompass.netty.bizz.*;
+import com.ccompass.netty.client.WebSocketClientHandler;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
+import io.netty.handler.codec.http.DefaultHttpHeaders;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
+import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.ccompass.netty.proxy.ExceptionCaughtHandler.closeOnFlush;
 import static com.ccompass.netty.bizz.ChannelHelper.getAllRelationChannel;
 import static com.ccompass.netty.bizz.ChannelHelper.getInboundChannelByArbitrarily;
 import static com.ccompass.netty.bizz.ServiceTypeEnum.MAIN;
+import static com.ccompass.netty.proxy.ExceptionCaughtHandler.closeOnFlush;
 
+/**
+ * @author albert on 10/23/19 3:10 PM
+ */
 @Slf4j
 public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
-    private final String remoteHost;
-    private final int remotePort;
+    private final ServerInfo serverInfo;
     private volatile Channel outboundChannel;
 
-    public ProxyFrontendHandler(String remoteHost, int remotePort) {
-        this.remoteHost = remoteHost;
-        this.remotePort = remotePort;
+
+    private AtomicInteger serviceTypeId = new AtomicInteger(2);
+
+    public ProxyFrontendHandler(ServerInfo serverInfo) {
+        this.serverInfo = serverInfo;
     }
 
     // 连接服务器
@@ -54,39 +64,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
     }
 
-    private void createMainChannel(ChannelHandlerContext ctx,
-                                   final Channel inboundChannel) {
-        // Start the connection attempt.
-
-        log.info("createMainChannel");
-        Bootstrap b = new Bootstrap();
-        b.group(inboundChannel.eventLoop()).channel(ctx.channel().getClass())
-                .handler(new ProxyBackendHandler(inboundChannel))
-                .option(ChannelOption.AUTO_READ, false);
-        ChannelFuture f = b.connect(remoteHost, remotePort);
-        outboundChannel = f.channel();
-
-
-        ChannelFutureListener channelFutureListener = future -> {
-            if (future.isSuccess()) {
-                // connection complete start to read first data
-                log.info("future.isSuccess() " + future.isSuccess());
-                ChannelInboundRealServerCache.put(inboundChannel, MAIN, outboundChannel);
-                ChannelRealServerInboundCache.put(outboundChannel, inboundChannel);
-                inboundChannel.read();
-            } else {
-                // Close the connection if the connection attempt has
-                // failed.
-                log.info("future.isSuccess() " + future.isSuccess());
-                ChannelRealServerInboundCache.clear(inboundChannel);
-                ChannelInboundRealServerCache.remove(inboundChannel);
-                inboundChannel.close();
-            }
-        };
-
-        f.addListener(channelFutureListener);
-    }
-
     private Channel createSinkChannel(ChannelHandlerContext ctx, final Channel inboundChannel, ServerInfo serverInfo) {
         // Start the connection attempt.
 
@@ -101,39 +78,72 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
     private Channel createOneChannel(ChannelHandlerContext ctx, final Channel inboundChannel, ServerInfo serverInfo) {
 
         log.info("createOneChannel");
+
+
+        URI uri = getUri(serverInfo);
+
+        WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.newHandshaker(
+                uri, WebSocketVersion.V13, null, true, new DefaultHttpHeaders());
+        log.info(String.valueOf(handshaker));
+        final WebSocketClientHandler handler = new WebSocketClientHandler(handshaker);
+
         Bootstrap b = new Bootstrap();
         b.group(inboundChannel.eventLoop())
                 .channel(ctx.channel().getClass())
-                .handler(new ProxyBackendHandler(inboundChannel))
-                .option(ChannelOption.AUTO_READ, false);
+                .option(ChannelOption.AUTO_READ, false)
+                .handler(new ProxyBackEndInitializer(inboundChannel, handler));
+
         ChannelFuture f = b.connect(serverInfo.getHost(), serverInfo.getPort());
         Channel sinkChannel = f.channel();
-        ChannelFutureListener listener = new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    // connection complete start to read first data
-                    log.info("future.isSuccess() " + future.isSuccess());
-                    inboundChannel.read();
+        ChannelFutureListener listener = future -> {
+            if (future.isSuccess()) {
+                // connection complete start to read first data
+                log.info("future.isSuccess() " + future.isSuccess());
+//                inboundChannel.read();
 
-                    ChannelInboundRealServerCache.put(inboundChannel, serverInfo.getServiceTypeEnum(), sinkChannel);
-                    ChannelRealServerInboundCache.put(sinkChannel, inboundChannel);
+                ChannelInboundRealServerCache.put(inboundChannel, serverInfo.getServiceTypeEnum(), sinkChannel);
+                ChannelRealServerInboundCache.put(sinkChannel, inboundChannel);
 
-                } else {
-                    // Close the connection if the connection attempt has failed.
-                    log.error("createOneChannel failed  " + future.isSuccess());
-                    ChannelRealServerInboundCache.clear(inboundChannel);
-                    ChannelInboundRealServerCache.remove(inboundChannel);
+            } else {
+                // Close the connection if the connection attempt has failed.
+                log.error("createOneChannel failed  " + future.isSuccess());
+                ChannelRealServerInboundCache.clear(inboundChannel);
+                ChannelInboundRealServerCache.remove(inboundChannel);
 
-                    inboundChannel.close();
+                inboundChannel.close();
 
 
-                }
             }
         };
         f.addListener(listener);
+
+        handler.handshakeFuture().addListener(future -> {
+            if (future.isSuccess()) {
+                // connection complete start to read first data
+                log.info("handshakeFuture.isSuccess() " + future.isSuccess());
+                sinkChannel.read();
+            } else {
+                // Close the connection if the connection attempt has failed.
+                log.error("handshakeFuture failed  " + future.isSuccess());
+                sinkChannel.close();
+            }
+        });
+
+
         return sinkChannel;
 
+    }
+
+    private URI getUri(ServerInfo serverInfo) {
+        String URL = "ws://" + serverInfo.getHost() + ":" + serverInfo.getPort() + "/" + (serverInfo.getPath() == null ? "" : serverInfo.getPath());
+
+        URI uri = null;
+        try {
+            uri = new URI(URL);
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        return uri;
     }
 
     // 中断的连接
@@ -158,40 +168,33 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
         log.info("channelRead");
 
-        ByteBuf buf = (ByteBuf) msg;
-        List<ByteBuf> bufList = new ArrayList<ByteBuf>();
-        for (int i = 0; i < getAllRelationChannel(ctx.channel()).size(); i++) {
-            bufList.add(buf.copy());
+
+        int type;
+
+        if (serviceTypeId.get() == 1) {
+            type = serviceTypeId.getAndIncrement();
+        } else if (serviceTypeId.get() == 2) {
+            type = serviceTypeId.getAndDecrement();
+        } else {
+            serviceTypeId.set(1);
+            type = serviceTypeId.get();
         }
 
-        ByteBuf parseParam = buf.copy();
-        byte[] byteArray = new byte[parseParam.capacity()];
-        parseParam.readBytes(byteArray);
-        String result = new String(byteArray);
-
-        String[] request = result.split(",");
-
-        String playerId = request[0];
-
-        Channel inboundChannel = getInboundChannelByArbitrarily(ctx.channel());
-
-
-        String serviceType = request[1];
-
-        int type = Integer.valueOf(serviceType);
         log.info("type {}", type);
 
+
+        Channel inboundChannel = getInboundChannelByArbitrarily(ctx.channel());
         log.info(String.valueOf(getAllRelationChannel(inboundChannel)));
 
         Channel ch = ChannelInboundRealServerCache.get(inboundChannel, ServiceTypeEnum.getById(type));
+
         // 从连接发送数据
         if (msg != null) {
 
             if (ch.isActive()) {
                 log.info("ch.isActive() " + ch.isActive());
-                ByteBuf msg1 = bufList.get(1);
                 ch
-                        .writeAndFlush(msg1)
+                        .writeAndFlush(msg)
                         .addListener(new ChannelFutureListener() {
                             @Override
                             public void operationComplete(ChannelFuture future) throws Exception {
@@ -210,6 +213,39 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
                 log.info("ch.isActive() " + ch.isActive());
             }
         }
+    }
+
+    private void createMainChannel(ChannelHandlerContext ctx,
+                                   final Channel inboundChannel) {
+        // Start the connection attempt.
+
+        log.info("createMainChannel");
+        Bootstrap b = new Bootstrap();
+        b.group(inboundChannel.eventLoop()).channel(ctx.channel().getClass())
+                .handler(new ProxyBackendHandler(inboundChannel))
+                .option(ChannelOption.AUTO_READ, false);
+        ChannelFuture f = b.connect(serverInfo.getHost(), serverInfo.getPort());
+        outboundChannel = f.channel();
+
+
+        ChannelFutureListener channelFutureListener = future -> {
+            if (future.isSuccess()) {
+                // connection complete start to read first data
+                log.info("future.isSuccess() " + future.isSuccess());
+                ChannelInboundRealServerCache.put(inboundChannel, MAIN, outboundChannel);
+                ChannelRealServerInboundCache.put(outboundChannel, inboundChannel);
+                inboundChannel.read();
+            } else {
+                // Close the connection if the connection attempt has
+                // failed.
+                log.info("future.isSuccess() " + future.isSuccess());
+                ChannelRealServerInboundCache.clear(inboundChannel);
+                ChannelInboundRealServerCache.remove(inboundChannel);
+                inboundChannel.close();
+            }
+        };
+
+        f.addListener(channelFutureListener);
     }
 
 

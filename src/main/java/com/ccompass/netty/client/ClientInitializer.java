@@ -21,7 +21,7 @@ public class ClientInitializer extends ChannelInitializer<SocketChannel> {
 
     private WebSocketClientHandler handler;
 
-    ClientInitializer(WebSocketClientHandler handler) {
+    public ClientInitializer(WebSocketClientHandler handler) {
         this.handler = handler;
     }
 
@@ -37,7 +37,7 @@ public class ClientInitializer extends ChannelInitializer<SocketChannel> {
          * */
         pipeline.addLast(
                 new HttpClientCodec(),
-                new HttpObjectAggregator(8192));
+                new HttpObjectAggregator(65535));
 
         // 客户端的逻辑
         pipeline.addLast("handler", handler);
