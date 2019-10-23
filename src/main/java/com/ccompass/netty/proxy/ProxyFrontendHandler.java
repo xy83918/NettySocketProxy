@@ -1,6 +1,6 @@
 package com.ccompass.netty.proxy;
 
-import com.ccompass.netty.proxy.biz.*;
+import com.ccompass.netty.bizz.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Set;
 
 import static com.ccompass.netty.proxy.ExceptionCaughtHandler.closeOnFlush;
-import static com.ccompass.netty.proxy.biz.ChannelHelper.getAllRelationChannel;
-import static com.ccompass.netty.proxy.biz.ChannelHelper.getInboundChannelByArbitrarily;
-import static com.ccompass.netty.proxy.biz.ServerTypeEnum.MAIN;
+import static com.ccompass.netty.bizz.ChannelHelper.getAllRelationChannel;
+import static com.ccompass.netty.bizz.ChannelHelper.getInboundChannelByArbitrarily;
+import static com.ccompass.netty.bizz.ServiceTypeEnum.MAIN;
 
 @Slf4j
 public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
@@ -39,17 +39,17 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
 
         //循环创建从链路
-        List<ServerInfo> serverInfos = CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.ONE);
+        List<ServerInfo> serverInfos = CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServiceTypeEnum.ONE);
 
         Channel oneChannel = createSinkChannel(ctx, inboundChannel, serverInfos.get(0));
 
-        ChannelInboundRealServerCache.put(inboundChannel, ServerTypeEnum.ONE, oneChannel);
+        ChannelInboundRealServerCache.put(inboundChannel, ServiceTypeEnum.ONE, oneChannel);
 
-        List<ServerInfo> twoServerInfos = CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServerTypeEnum.TWO);
+        List<ServerInfo> twoServerInfos = CacheUtils.SERVER_TYPE_ENUM_SERVER_INFO_MAP.get(ServiceTypeEnum.TWO);
 
         Channel twoChannel = createSinkChannel(ctx, inboundChannel, twoServerInfos.get(0));
 
-        ChannelInboundRealServerCache.put(inboundChannel, ServerTypeEnum.TWO, twoChannel);
+        ChannelInboundRealServerCache.put(inboundChannel, ServiceTypeEnum.TWO, twoChannel);
 
 
     }
@@ -116,7 +116,7 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
                     log.info("future.isSuccess() " + future.isSuccess());
                     inboundChannel.read();
 
-                    ChannelInboundRealServerCache.put(inboundChannel, serverInfo.getServerTypeEnum(), sinkChannel);
+                    ChannelInboundRealServerCache.put(inboundChannel, serverInfo.getServiceTypeEnum(), sinkChannel);
                     ChannelRealServerInboundCache.put(sinkChannel, inboundChannel);
 
                 } else {
@@ -183,7 +183,7 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
         log.info(String.valueOf(getAllRelationChannel(inboundChannel)));
 
-        Channel ch = ChannelInboundRealServerCache.get(inboundChannel, ServerTypeEnum.getById(type));
+        Channel ch = ChannelInboundRealServerCache.get(inboundChannel, ServiceTypeEnum.getById(type));
         // 从连接发送数据
         if (msg != null) {
 

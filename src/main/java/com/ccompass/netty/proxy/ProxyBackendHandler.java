@@ -1,7 +1,7 @@
 package com.ccompass.netty.proxy;
 
 
-import com.ccompass.netty.proxy.biz.ChannelHelper;
+import com.ccompass.netty.bizz.ChannelHelper;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;

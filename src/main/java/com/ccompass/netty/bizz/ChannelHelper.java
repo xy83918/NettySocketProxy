@@ -1,4 +1,4 @@
-package com.ccompass.netty.proxy.biz;
+package com.ccompass.netty.bizz;
 
 import io.netty.channel.Channel;
 import lombok.NoArgsConstructor;
@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.ccompass.netty.proxy.biz.ChannelInboundRealServerCache.CHANNEL_MAP_MAP;
+import static com.ccompass.netty.bizz.ChannelInboundRealServerCache.CHANNEL_MAP_MAP;
 
 
 /**
@@ -21,62 +21,62 @@ public class ChannelHelper {
 
 
     public static Channel getInboundChannel(Channel inbound) {
-        Channel ThreeServerChannel = getServerChannel(inbound, ServerTypeEnum.ZERO);
+        Channel ThreeServerChannel = getServerChannel(inbound, ServiceTypeEnum.ZERO);
         log.info("ChannelHelper getInboundChannel {}", ThreeServerChannel);
         log.info("ChannelHelper getInboundChannel {} status {}", ThreeServerChannel.isActive(), ThreeServerChannel.isOpen());
         return ThreeServerChannel;
     }
 
-    public static Channel getServerChannel(Channel inbound, ServerTypeEnum serverTypeEnum) {
+    public static Channel getServerChannel(Channel inbound, ServiceTypeEnum serviceTypeEnum) {
 
-        Map<ServerTypeEnum, Channel> integerChannelMap = CHANNEL_MAP_MAP.get(inbound);
+        Map<ServiceTypeEnum, Channel> integerChannelMap = CHANNEL_MAP_MAP.get(inbound);
 
         if (integerChannelMap == null) {
             integerChannelMap = new ConcurrentHashMap<>();
         }
 
-        return integerChannelMap.get(serverTypeEnum.getId());
+        return integerChannelMap.get(serviceTypeEnum.getId());
     }
 
     public static Channel setInboundChannel(Channel inbound, Channel channel) {
-        return setServerChannel(inbound, ServerTypeEnum.ZERO, channel);
+        return setServerChannel(inbound, ServiceTypeEnum.ZERO, channel);
     }
 
-    public static Channel setServerChannel(Channel inbound, ServerTypeEnum serverTypeEnum, Channel channel) {
+    public static Channel setServerChannel(Channel inbound, ServiceTypeEnum serviceTypeEnum, Channel channel) {
 
-        Map<ServerTypeEnum, Channel> integerChannelMap = CHANNEL_MAP_MAP.get(inbound);
+        Map<ServiceTypeEnum, Channel> integerChannelMap = CHANNEL_MAP_MAP.get(inbound);
 
         if (integerChannelMap == null) {
             integerChannelMap = new ConcurrentHashMap<>();
         }
-        integerChannelMap.put(serverTypeEnum, channel);
+        integerChannelMap.put(serviceTypeEnum, channel);
         CHANNEL_MAP_MAP.put(inbound, integerChannelMap);
         return channel;
     }
 
     public static Channel getOneChannel(Channel inbound) {
-        return getServerChannel(inbound, ServerTypeEnum.ONE);
+        return getServerChannel(inbound, ServiceTypeEnum.ONE);
     }
 
     public static Channel setOneChannel(Channel inbound, Channel channel) {
 
-        return setServerChannel(inbound, ServerTypeEnum.ONE, channel);
+        return setServerChannel(inbound, ServiceTypeEnum.ONE, channel);
     }
 
     public static Channel getTwoChannel(Channel inbound) {
-        return getServerChannel(inbound, ServerTypeEnum.TWO);
+        return getServerChannel(inbound, ServiceTypeEnum.TWO);
     }
 
     public static Channel setTwoChannel(Channel inbound, Channel channel) {
-        return setServerChannel(inbound, ServerTypeEnum.TWO, channel);
+        return setServerChannel(inbound, ServiceTypeEnum.TWO, channel);
     }
 
     public static Channel getThreeChannel(Channel inbound) {
-        return getServerChannel(inbound, ServerTypeEnum.THREE);
+        return getServerChannel(inbound, ServiceTypeEnum.THREE);
     }
 
     public static Channel setThreeChannel(Channel inbound, Channel channel) {
-        return setServerChannel(inbound, ServerTypeEnum.THREE, channel);
+        return setServerChannel(inbound, ServiceTypeEnum.THREE, channel);
     }
 
     public static Set<Channel> getAllRelationChannel(Channel arbitrarily) {

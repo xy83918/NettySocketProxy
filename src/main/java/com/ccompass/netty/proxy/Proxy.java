@@ -17,7 +17,7 @@
 
  import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import com.ccompass.netty.proxy.biz.ServerInfo;
+import com.ccompass.netty.bizz.ServerInfo;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;

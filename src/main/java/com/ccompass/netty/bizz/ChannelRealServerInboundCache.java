@@ -1,4 +1,4 @@
-package com.ccompass.netty.proxy.biz;
+package com.ccompass.netty.bizz;
 
 import io.netty.channel.Channel;
 
@@ -19,7 +19,7 @@ public class ChannelRealServerInboundCache {
     }
 
     public static void clear(Channel inbound) {
-        Map<ServerTypeEnum, Channel> serverTypeEnumChannelMap = ChannelInboundRealServerCache.CHANNEL_MAP_MAP.get(inbound);
+        Map<ServiceTypeEnum, Channel> serverTypeEnumChannelMap = ChannelInboundRealServerCache.CHANNEL_MAP_MAP.get(inbound);
 
         if (!serverTypeEnumChannelMap.isEmpty()) {
             serverTypeEnumChannelMap.values().forEach(v -> PLAYER_MAP_CONNECTION_CHANNEL_MAP.remove(v));
@@ -28,7 +28,7 @@ public class ChannelRealServerInboundCache {
 
     public static void remove(Channel realServer) {
         Channel channel = get(realServer);
-        Map<ServerTypeEnum, Channel> serverTypeEnumChannelMap = ChannelInboundRealServerCache.CHANNEL_MAP_MAP.get(channel);
+        Map<ServiceTypeEnum, Channel> serverTypeEnumChannelMap = ChannelInboundRealServerCache.CHANNEL_MAP_MAP.get(channel);
 
         if (!serverTypeEnumChannelMap.isEmpty()) {
             serverTypeEnumChannelMap.values().forEach(v -> {

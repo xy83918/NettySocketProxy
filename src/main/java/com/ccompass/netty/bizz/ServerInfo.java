@@ -1,4 +1,4 @@
-package com.ccompass.netty.proxy.biz;
+package com.ccompass.netty.bizz;
 
 import lombok.*;
 
@@ -13,7 +13,7 @@ import lombok.*;
 public class ServerInfo {
 
     private String instanceId;
-    private ServerTypeEnum serverTypeEnum;
+    private ServiceTypeEnum serviceTypeEnum;
     private String host;
     private Integer port;
 

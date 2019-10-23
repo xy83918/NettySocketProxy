@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
 
-import static com.ccompass.netty.proxy.biz.ChannelHelper.getAllRelationChannel;
+import static com.ccompass.netty.bizz.ChannelHelper.getAllRelationChannel;
 
 /**
  * @author albert on 10/22/19 2:36 PM

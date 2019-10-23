@@ -1,4 +1,4 @@
-package com.ccompass.netty.proxy.biz;
+package com.ccompass.netty.bizz;
 
 import io.netty.channel.Channel;
 
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  */
 public class ChannelInboundRealServerCache {
 
-    public static final Map<Channel, Map<ServerTypeEnum, Channel>> CHANNEL_MAP_MAP = new ConcurrentHashMap();
+    public static final Map<Channel, Map<ServiceTypeEnum, Channel>> CHANNEL_MAP_MAP = new ConcurrentHashMap();
     public static final int MAP_CAPACITY = 3;
 
     public static void put(Channel inbound) {
@@ -22,20 +22,20 @@ public class ChannelInboundRealServerCache {
 
     }
 
-    public static void put(Channel inbound, ServerTypeEnum serverTypeEnum, Channel outbound) {
+    public static void put(Channel inbound, ServiceTypeEnum serviceTypeEnum, Channel outbound) {
 
-        Map<ServerTypeEnum, Channel> serverTypeEnumChannelMap = CHANNEL_MAP_MAP.get(inbound);
+        Map<ServiceTypeEnum, Channel> serverTypeEnumChannelMap = CHANNEL_MAP_MAP.get(inbound);
         if (serverTypeEnumChannelMap != null) {
-            serverTypeEnumChannelMap.put(serverTypeEnum, outbound);
+            serverTypeEnumChannelMap.put(serviceTypeEnum, outbound);
         } else {
             serverTypeEnumChannelMap = new HashMap<>(MAP_CAPACITY);
-            serverTypeEnumChannelMap.put(serverTypeEnum, outbound);
+            serverTypeEnumChannelMap.put(serviceTypeEnum, outbound);
         }
         CHANNEL_MAP_MAP.put(inbound, serverTypeEnumChannelMap);
     }
 
-    public static Channel get(Channel channel, ServerTypeEnum serverTypeEnum) {
-        return CHANNEL_MAP_MAP.get(channel).get(serverTypeEnum);
+    public static Channel get(Channel channel, ServiceTypeEnum serviceTypeEnum) {
+        return CHANNEL_MAP_MAP.get(channel).get(serviceTypeEnum);
     }
 
     public static Set<Channel> getAll(Channel channel) {

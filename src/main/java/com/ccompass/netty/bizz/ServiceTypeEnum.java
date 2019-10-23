@@ -1,4 +1,4 @@
-package com.ccompass.netty.proxy.biz;
+package com.ccompass.netty.bizz;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author albert on 10/16/19
  */
 @NoArgsConstructor
-public enum ServerTypeEnum {
+public enum ServiceTypeEnum {
 
 
     ZERO(0, "inbound"),
@@ -22,15 +22,15 @@ public enum ServerTypeEnum {
 
     ;
 
-    public static final Map<Integer, ServerTypeEnum> keyMap = new ConcurrentHashMap();
+    public static final Map<Integer, ServiceTypeEnum> keyMap = new ConcurrentHashMap();
 
     static {
-        keyMap.put(ZERO.id, ZERO);
-        keyMap.put(ONE.id, ONE);
-        keyMap.put(TWO.id, TWO);
-        keyMap.put(THREE.id, THREE);
-        keyMap.put(FOUR.id, FOUR);
-        keyMap.put(MAIN.id, MAIN);
+        keyMap.put(ZERO.getId(), ZERO);
+        keyMap.put(ONE.getId(), ONE);
+        keyMap.put(TWO.getId(), TWO);
+        keyMap.put(THREE.getId(), THREE);
+        keyMap.put(FOUR.getId(), FOUR);
+        keyMap.put(MAIN.getId(), MAIN);
     }
 
     @Getter
@@ -38,12 +38,12 @@ public enum ServerTypeEnum {
     @Getter
     private Integer id;
 
-    ServerTypeEnum(Integer id, String description) {
+    ServiceTypeEnum(Integer id, String description) {
         this.id = id;
         this.description = description;
     }
 
-    public static ServerTypeEnum getById(Integer code) {
+    public static ServiceTypeEnum getById(Integer code) {
         return keyMap.get(code);
     }
 }
