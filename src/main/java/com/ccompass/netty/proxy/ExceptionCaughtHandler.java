@@ -11,6 +11,9 @@ import java.util.Set;
 
 import static com.ccompass.netty.proxy.biz.ChannelHelper.getAllRelationChannel;
 
+/**
+ * @author albert on 10/22/19 2:36 PM
+ */
 @Slf4j
 public class ExceptionCaughtHandler extends ChannelInboundHandlerAdapter {
 
@@ -19,8 +22,7 @@ public class ExceptionCaughtHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
 
-        log.info("**********链路异常，异常信息：" + cause.getMessage(), cause);
-
+        log.error("exceptionCaught " + cause.getMessage(), cause);
 
         Set<Channel> allRelationChannel = getAllRelationChannel(ctx.channel());
         if (allRelationChannel.size() > 0) {

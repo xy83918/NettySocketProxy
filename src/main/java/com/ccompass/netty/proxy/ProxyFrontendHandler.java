@@ -169,11 +169,7 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         parseParam.readBytes(byteArray);
         String result = new String(byteArray);
 
-
-
-
         String[] request = result.split(",");
-
 
         String playerId = request[0];
 
