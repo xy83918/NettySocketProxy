@@ -15,7 +15,6 @@
  */
 package com.ccompass.netty.proxy;
 
-import com.ccompass.netty.client.WebSocketClientHandler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;

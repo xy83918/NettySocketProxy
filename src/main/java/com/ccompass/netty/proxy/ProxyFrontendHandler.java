@@ -1,7 +1,6 @@
 package com.ccompass.netty.proxy;
 
 import com.ccompass.netty.bizz.*;
-import com.ccompass.netty.client.WebSocketClientHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
@@ -99,18 +98,20 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
             if (future.isSuccess()) {
                 // connection complete start to read first data
                 log.info("future.isSuccess() " + future.isSuccess());
-//                inboundChannel.read();
-
+                ctx.channel().read();
+                sinkChannel.read();
                 ChannelInboundRealServerCache.put(inboundChannel, serverInfo.getServiceTypeEnum(), sinkChannel);
                 ChannelRealServerInboundCache.put(sinkChannel, inboundChannel);
 
             } else {
                 // Close the connection if the connection attempt has failed.
                 log.error("createOneChannel failed  " + future.isSuccess());
+
                 ChannelRealServerInboundCache.clear(inboundChannel);
                 ChannelInboundRealServerCache.remove(inboundChannel);
 
-                inboundChannel.close();
+                sinkChannel.close();
+                ctx.close();
 
 
             }
@@ -118,16 +119,24 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         f.addListener(listener);
 
         handler.handshakeFuture().addListener(future -> {
+            log.info("handshakeFuture");
             if (future.isSuccess()) {
                 // connection complete start to read first data
                 log.info("handshakeFuture.isSuccess() " + future.isSuccess());
+                ctx.channel().read();
                 sinkChannel.read();
             } else {
                 // Close the connection if the connection attempt has failed.
                 log.error("handshakeFuture failed  " + future.isSuccess());
+                ctx.close();
                 sinkChannel.close();
             }
         });
+//
+//        while (!handshaker.isHandshakeComplete()) {
+//            sleepUninterruptibly(500, TimeUnit.MILLISECONDS);
+//            log.debug("Waiting for Handshake to complete");
+//        }
 
 
         return sinkChannel;
@@ -167,6 +176,8 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws InterruptedException {
 
         log.info("channelRead");
+
+
 
 
         int type;

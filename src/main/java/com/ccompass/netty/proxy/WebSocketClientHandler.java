@@ -35,7 +35,7 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-package com.ccompass.netty.client;
+package com.ccompass.netty.proxy;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -125,7 +125,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
             String result = ctx.channel().localAddress() + new String(byteArray);
 
             log.info("WebSocket Client received BinaryWebSocketFrame message: " + result);
-
+            ctx.fireChannelRead(msg);
         } else if (frame instanceof PongWebSocketFrame) {
             log.info("WebSocket Client received PongWebSocketFrame pong");
         } else if (frame instanceof CloseWebSocketFrame) {

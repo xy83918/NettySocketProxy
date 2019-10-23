@@ -1,14 +1,17 @@
 package com.ccompass.netty.proxy;
 
 
-import com.ccompass.netty.bizz.ChannelHelper;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.ccompass.netty.bizz.ChannelHelper.getInboundChannelByArbitrarily;
 import static com.ccompass.netty.proxy.ExceptionCaughtHandler.closeOnFlush;
 
 /**
@@ -40,19 +43,30 @@ public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
 
-        log.info("channelRead");
-        Channel inbound = ChannelHelper.getInboundChannelByArbitrarily(ctx.channel());
-        inboundChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
-            if (future.isSuccess()) {
+        log.info("channelRead inboundChannel {} {}", msg.getClass().getSimpleName());
 
-                log.info("future.isSuccess() " + future.isSuccess());
-                ctx.channel().read();
-            } else {
+        ByteBuf binaryData;
+        WebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.EMPTY_BUFFER);
+        if (msg instanceof WebSocketFrame) {
+            frame = (WebSocketFrame) msg;
+        }
 
-                log.info("future.isSuccess() " + future.isSuccess());
-                future.channel().close();
-            }
-        });
+        log.info(String.valueOf(ctx));
+
+        Channel inboundChannel = getInboundChannelByArbitrarily(ctx.channel());
+        if (inboundChannel.isActive()) {
+            inboundChannel.writeAndFlush(frame.retain()).addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+
+                    log.info("future.isSuccess() " + future.isSuccess());
+                    inboundChannel.read();
+                } else {
+
+                    log.info("future.isSuccess() " + future.isSuccess());
+                    inboundChannel.close();
+                }
+            });
+        }
     }
 
 }
