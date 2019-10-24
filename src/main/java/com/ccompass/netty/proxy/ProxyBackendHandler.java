@@ -1,7 +1,6 @@
 package com.ccompass.netty.proxy;
 
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -45,9 +44,9 @@ public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
 
         log.info("channelRead inboundChannel {} {}", msg.getClass().getSimpleName());
 
-        ByteBuf binaryData;
         WebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.EMPTY_BUFFER);
-        if (msg instanceof WebSocketFrame) {
+        if (msg instanceof BinaryWebSocketFrame) {
+            log.info("BinaryWebSocketFrame");
             frame = (WebSocketFrame) msg;
         }
 
@@ -57,11 +56,9 @@ public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
         if (inboundChannel.isActive()) {
             inboundChannel.writeAndFlush(frame.retain()).addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
-
                     log.info("future.isSuccess() " + future.isSuccess());
                     inboundChannel.read();
                 } else {
-
                     log.info("future.isSuccess() " + future.isSuccess());
                     inboundChannel.close();
                 }

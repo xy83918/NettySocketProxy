@@ -30,10 +30,10 @@ import io.netty.handler.logging.LoggingHandler;
 public class ProxyBackEndInitializer extends ChannelInitializer<SocketChannel> {
 
 
-    private final WebSocketClientHandler handler;
+    private final ProxyBackEndWebSocketHandler handler;
     private final Channel inboundChannel;
 
-    public ProxyBackEndInitializer(Channel inboundChannel, WebSocketClientHandler handler) {
+    public ProxyBackEndInitializer(Channel inboundChannel, ProxyBackEndWebSocketHandler handler) {
         this.inboundChannel = inboundChannel;
         this.handler = handler;
 

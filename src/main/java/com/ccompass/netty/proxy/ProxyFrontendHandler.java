@@ -84,7 +84,7 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.newHandshaker(
                 uri, WebSocketVersion.V13, null, true, new DefaultHttpHeaders());
         log.info(String.valueOf(handshaker));
-        final WebSocketClientHandler handler = new WebSocketClientHandler(handshaker);
+        final ProxyBackEndWebSocketHandler handler = new ProxyBackEndWebSocketHandler(handshaker);
 
         Bootstrap b = new Bootstrap();
         b.group(inboundChannel.eventLoop())

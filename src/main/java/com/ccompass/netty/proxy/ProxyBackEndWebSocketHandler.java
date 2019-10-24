@@ -48,13 +48,13 @@ import lombok.extern.slf4j.Slf4j;
  * @author albert on 10/23/19 4:42 PM
  */
 @Slf4j
-public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
+public class ProxyBackEndWebSocketHandler extends SimpleChannelInboundHandler<Object> {
 
 
     private final WebSocketClientHandshaker handshaker;
     private ChannelPromise handshakeFuture;
 
-    public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
+    public ProxyBackEndWebSocketHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
     }
 
@@ -118,14 +118,14 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
             log.info("WebSocket Client received TextWebSocketFrame message: " + textFrame.text());
 
         } else if (frame instanceof BinaryWebSocketFrame) {
-
+            WebSocketFrame copy = frame.copy();
             ByteBuf bf = frame.content();
             byte[] byteArray = new byte[bf.capacity()];
             bf.readBytes(byteArray);
-            String result = ctx.channel().localAddress() + new String(byteArray);
+            String result = new String(byteArray);
 
-            log.info("WebSocket Client received BinaryWebSocketFrame message: " + result);
-            ctx.fireChannelRead(msg);
+            log.info("WebSocket proxy received BinaryWebSocketFrame message: " + result);
+            ctx.fireChannelRead(copy);
         } else if (frame instanceof PongWebSocketFrame) {
             log.info("WebSocket Client received PongWebSocketFrame pong");
         } else if (frame instanceof CloseWebSocketFrame) {

@@ -13,6 +13,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * @author albert on 10/24/19 9:59 AM
+ */
 @Slf4j
 @Data
 @NoArgsConstructor
