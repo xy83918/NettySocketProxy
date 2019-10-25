@@ -10,7 +10,6 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.ccompass.netty.bizz.ChannelHelper.getInboundChannelByArbitrarily;
 import static com.ccompass.netty.proxy.ExceptionCaughtHandler.closeOnFlush;
 
 /**
@@ -28,15 +27,21 @@ public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
 
-        log.info("channelActive");
+        log.info("received channelActive start ---");
+
         ctx.read();
         ctx.write(Unpooled.EMPTY_BUFFER);
+
+        log.info("received channelActive finish ---");
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        log.info("channelInactive");
+        log.info("received channelInactive start ---");
+
         closeOnFlush(inboundChannel);
+
+        log.info("received channelInactive finish ---");
     }
 
     @Override
@@ -52,7 +57,7 @@ public class ProxyBackendHandler extends ChannelInboundHandlerAdapter {
 
         log.info(String.valueOf(ctx));
 
-        Channel inboundChannel = getInboundChannelByArbitrarily(ctx.channel());
+//        Channel inboundChannel = getInboundChannelByArbitrarily(ctx.channel());
         if (inboundChannel.isActive()) {
             inboundChannel.writeAndFlush(frame.retain()).addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {

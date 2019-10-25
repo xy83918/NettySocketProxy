@@ -15,7 +15,6 @@
  */
 package com.ccompass.netty.proxy;
 
-import com.ccompass.netty.bizz.ServerInfo;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -32,12 +31,6 @@ import io.netty.handler.timeout.IdleStateHandler;
 public class ProxyFrontEndInitializer extends ChannelInitializer<SocketChannel> {
 
 
-    private final ServerInfo serverInfo;
-
-    public ProxyFrontEndInitializer(ServerInfo serverInfo) {
-        this.serverInfo = serverInfo;
-    }
-
     @Override
     public void initChannel(SocketChannel ch) {
 
@@ -49,7 +42,7 @@ public class ProxyFrontEndInitializer extends ChannelInitializer<SocketChannel> 
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
-        pipeline.addLast(new ProxyFrontendHandler(serverInfo));
+        pipeline.addLast(new ProxyFrontendHandler());
         pipeline.addLast(new ExceptionCaughtHandler());
     }
 }

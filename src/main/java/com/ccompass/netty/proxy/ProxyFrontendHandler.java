@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ccompass.netty.bizz.ChannelHelper.getAllRelationChannel;
 import static com.ccompass.netty.bizz.ChannelHelper.getInboundChannelByArbitrarily;
-import static com.ccompass.netty.bizz.ServiceTypeEnum.MAIN;
 import static com.ccompass.netty.proxy.ExceptionCaughtHandler.closeOnFlush;
 
 /**
@@ -26,15 +25,9 @@ import static com.ccompass.netty.proxy.ExceptionCaughtHandler.closeOnFlush;
 @Slf4j
 public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
-    private final ServerInfo serverInfo;
-    private volatile Channel outboundChannel;
-
 
     private AtomicInteger serviceTypeId = new AtomicInteger(2);
 
-    public ProxyFrontendHandler(ServerInfo serverInfo) {
-        this.serverInfo = serverInfo;
-    }
 
     // 连接服务器
     @Override
@@ -203,38 +196,6 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void createMainChannel(ChannelHandlerContext ctx,
-                                   final Channel inboundChannel) {
-        // Start the connection attempt.
-
-        log.info("createMainChannel");
-        Bootstrap b = new Bootstrap();
-        b.group(inboundChannel.eventLoop()).channel(ctx.channel().getClass())
-                .handler(new ProxyBackendHandler(inboundChannel))
-                .option(ChannelOption.AUTO_READ, false);
-        ChannelFuture f = b.connect(serverInfo.getHost(), serverInfo.getPort());
-        outboundChannel = f.channel();
-
-
-        ChannelFutureListener channelFutureListener = future -> {
-            if (future.isSuccess()) {
-                // connection complete start to read first data
-                log.info("future.isSuccess() " + future.isSuccess());
-                ChannelInboundRealServerCache.put(inboundChannel, MAIN, outboundChannel);
-                ChannelRealServerInboundCache.put(outboundChannel, inboundChannel);
-                inboundChannel.read();
-            } else {
-                // Close the connection if the connection attempt has
-                // failed.
-                log.info("future.isSuccess() " + future.isSuccess());
-                ChannelRealServerInboundCache.clear(inboundChannel);
-                ChannelInboundRealServerCache.remove(inboundChannel);
-                inboundChannel.close();
-            }
-        };
-
-        f.addListener(channelFutureListener);
-    }
 
 
 }

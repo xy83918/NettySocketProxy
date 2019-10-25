@@ -17,7 +17,6 @@
 
  import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import com.ccompass.netty.bizz.ServerInfo;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -69,10 +68,7 @@ import lombok.extern.slf4j.Slf4j;
              b.group(bossGroup, workerGroup)
                      .channel(NioServerSocketChannel.class)
                      //    .handler(new LoggingHandler(LogLevel.INFO))
-                     .childHandler(new ProxyFrontEndInitializer(ServerInfo.builder()
-                             .host(host)
-                             .port(port)
-                             .build()))
+                     .childHandler(new ProxyFrontEndInitializer())
                      .childOption(ChannelOption.AUTO_READ, false);
 
              ChannelFuture future = b.bind(listenPort).sync();
