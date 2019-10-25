@@ -48,13 +48,13 @@ import lombok.extern.slf4j.Slf4j;
  * @author albert on 10/23/19 4:42 PM
  */
 @Slf4j
-public class ProxyBackEndWebSocketHandler extends SimpleChannelInboundHandler<Object> {
+public class ProxyBackendWebSocketHandler extends SimpleChannelInboundHandler<Object> {
 
 
     private final WebSocketClientHandshaker handshaker;
     private ChannelPromise handshakeFuture;
 
-    public ProxyBackEndWebSocketHandler(WebSocketClientHandshaker handshaker) {
+    public ProxyBackendWebSocketHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
     }
 

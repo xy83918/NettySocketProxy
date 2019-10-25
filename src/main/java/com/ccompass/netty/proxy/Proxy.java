@@ -68,7 +68,7 @@ import lombok.extern.slf4j.Slf4j;
              b.group(bossGroup, workerGroup)
                      .channel(NioServerSocketChannel.class)
                      //    .handler(new LoggingHandler(LogLevel.INFO))
-                     .childHandler(new ProxyFrontEndInitializer())
+                     .childHandler(new ProxyFrontendInitializer())
                      .childOption(ChannelOption.AUTO_READ, false);
 
              ChannelFuture future = b.bind(listenPort).sync();

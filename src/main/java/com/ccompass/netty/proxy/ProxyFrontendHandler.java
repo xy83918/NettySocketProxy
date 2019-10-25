@@ -77,13 +77,13 @@ public class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
         WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory.newHandshaker(
                 uri, WebSocketVersion.V13, null, true, new DefaultHttpHeaders());
         log.info(String.valueOf(handshaker));
-        final ProxyBackEndWebSocketHandler handler = new ProxyBackEndWebSocketHandler(handshaker);
+        final ProxyBackendWebSocketHandler handler = new ProxyBackendWebSocketHandler(handshaker);
 
         Bootstrap b = new Bootstrap();
         b.group(inboundChannel.eventLoop())
                 .channel(ctx.channel().getClass())
                 .option(ChannelOption.AUTO_READ, false)
-                .handler(new ProxyBackEndInitializer(inboundChannel, handler));
+                .handler(new ProxyBackendInitializer(inboundChannel, handler));
 
         ChannelFuture f = b.connect(serverInfo.getHost(), serverInfo.getPort());
         Channel sinkChannel = f.channel();

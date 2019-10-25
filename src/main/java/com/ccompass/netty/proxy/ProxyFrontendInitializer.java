@@ -15,42 +15,35 @@
  */
 package com.ccompass.netty.proxy;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 
 /**
  * @author albert on 10/23/19 3:10 PM
  */
-public class ProxyBackEndInitializer extends ChannelInitializer<SocketChannel> {
+public class ProxyFrontendInitializer extends ChannelInitializer<SocketChannel> {
 
-
-    private final ProxyBackEndWebSocketHandler handler;
-    private final Channel inboundChannel;
-
-    public ProxyBackEndInitializer(Channel inboundChannel, ProxyBackEndWebSocketHandler handler) {
-        this.inboundChannel = inboundChannel;
-        this.handler = handler;
-
-    }
 
     @Override
     public void initChannel(SocketChannel ch) {
 
         ChannelPipeline pipeline = ch.pipeline();
+        pipeline.addLast(new IdleStateHandler(3600, 0, 0));
 
-        pipeline.addLast(new LoggingHandler(LogLevel.TRACE));
-        pipeline.addLast(new HttpClientCodec());
+        //请求日志
+        pipeline.addLast(new LoggingHandler(LogLevel.INFO));
+        pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
-        pipeline.addLast(handler);
-        pipeline.addLast(new ProxyBackendHandler(inboundChannel));
+        pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
+        pipeline.addLast(new ProxyFrontendAuthenticationHandler());
+        pipeline.addLast(new ProxyFrontendHandler());
         pipeline.addLast(new ExceptionCaughtHandler());
-
-
     }
 }
